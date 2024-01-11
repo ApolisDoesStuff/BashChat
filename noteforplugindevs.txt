@@ -1,0 +1,50 @@
+Plugin System Overview
+
+The plugin system in this Python application allows for the loading of plugins at runtime. Plugins are Python scripts located in a designated directory ("plugins") and are loaded dynamically during the execution of the application.
+
+Creating a Plugin
+
+To create a plugin, you need to write a Python script that defines one or more functions. These functions will be called by the application at specific points, depending on the functionality of the plugin. Here is an example of a simple plugin that adds a timestamp to every message sent by the user:
+
+# timestamp_plugin.py
+
+import datetime
+
+def on_message_sent(message):
+  timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  return f"[{timestamp}] {message}"
+
+In this plugin, the on_message_sent function takes a message as input, prepends a timestamp to it, and returns the modified message. This function will be called for every message sent by the user.
+
+Loading Plugins
+
+Plugins are loaded from the "plugins" directory using the load_plugins_from_dir function. This function scans the directory for Python files (files ending with ".py"), loads each one as a module using importlib.util.spec_from_file_location and importlib.util.module_from_spec, and adds the resulting module to the list of plugins.
+
+Using Plugins
+
+Once a plugin is loaded, it can be used by the application. The application checks if each plugin has a function that corresponds to the event it wants to hook into (such as sending a message), and if so, it calls that function. The plugin function can then modify the data as needed, or perform some action.
+
+For example, in the provided client code, the receive and write functions check if each plugin has an on_message_received and on_message_sent function respectively, and if so, they call those functions with the message as argument.
+
+Example Usage
+
+Here is an example of how to use the plugin system in the client code:
+
+# Load plugins from the "plugins" directory
+plugins = load_plugins_from_dir("/path/to/plugins")
+
+# ... rest of the client code ...
+
+# In the receive function
+for plugin in plugins:
+   if hasattr(plugin, 'on_message_received'):
+       message = plugin.on_message_received(message)
+print(message)
+
+# In the write function
+for plugin in plugins:
+   if hasattr(plugin, 'on_message_sent'):
+       message = plugin.on_message_sent(message)
+client.send(message.encode('ascii'))
+
+In this example, the receive function checks if each plugin has an on_message_received function, and if so, it calls that function with the received message as argument. Similarly, the write function checks if each plugin has an on_message_sent function, and if so, it calls that function with the message to be sent as argument

@@ -1,50 +1,38 @@
-Plugin System Overview
+Script Plugin System Development Documentation
+This script implements a plugin system for a chat application. The plugin system allows for the addition of functionality through external Python scripts. Each plugin script must be placed in the ./plugins/ directory. The script will automatically load all valid Python scripts in this directory.
 
-The plugin system in this Python application allows for the loading of plugins at runtime. Plugins are Python scripts located in a designated directory ("plugins") and are loaded dynamically during the execution of the application.
+Functions
+send_message(message)
+This function sends a message to the server. The message is encoded as ASCII before being sent.
+
+constantly_active()
+This function creates an infinite loop. It does not perform any operations but can be used to keep a plugin continuously active.
+
+load_plugin(file_path)
+This function loads a plugin from a given file path. It uses the importlib.util module to dynamically import the plugin script. After importing the script, it checks if the script has the send_message and constantly_active functions. If these functions are not defined, they are added to the script with the default implementations defined in this script.
+
+load_plugins_from_dir(directory)
+This function loads all plugins from a given directory. It iterates over all files in the directory, checking if they are Python scripts (files ending with .py). If a file is a Python script, it attempts to load the script as a plugin using the load_plugin function. All loaded plugins are returned in a list.
+
+Main Execution
+The script starts by asking the user for their nickname and a join code. The join code is split into a host and port, which are used to establish a connection to the server.
+
+The script attempts to connect to the server in an infinite loop until a connection is established. If the connection is refused, the script asks the user to enter the join code again.
+
+Once connected, the script creates two threads: one for receiving messages and one for sending messages. These threads run in parallel, allowing the script to send and receive messages simultaneously.
+
+Each plugin is also given the opportunity to modify incoming and outgoing messages. If a plugin defines an on_message_received function, this function is called whenever a message is received, and its return value is used as the new message. Similarly, if a plugin defines an on_message_sent function, this function is called before a message is sent, and its return value is used as the new message.
 
 Creating a Plugin
+To create a plugin, simply create a new Python script in the ./plugins/ directory. The script can define any functions it wishes, but it can also override the send_message, constantly_active, on_message_received, and on_message_sent functions to provide custom behavior.
 
-To create a plugin, you need to write a Python script that defines one or more functions. These functions will be called by the application at specific points, depending on the functionality of the plugin. Here is an example of a simple plugin that adds a timestamp to every message sent by the user:
+Here is an example of a simple plugin that logs all received messages:
 
-# timestamp_plugin.py
+import logging
 
-import datetime
+logging.basicConfig(filename='chat.log', level=logging.INFO)
 
-def on_message_sent(message):
-  timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-  return f"[{timestamp}] {message}"
-
-In this plugin, the on_message_sent function takes a message as input, prepends a timestamp to it, and returns the modified message. This function will be called for every message sent by the user.
-
-Loading Plugins
-
-Plugins are loaded from the "plugins" directory using the load_plugins_from_dir function. This function scans the directory for Python files (files ending with ".py"), loads each one as a module using importlib.util.spec_from_file_location and importlib.util.module_from_spec, and adds the resulting module to the list of plugins.
-
-Using Plugins
-
-Once a plugin is loaded, it can be used by the application. The application checks if each plugin has a function that corresponds to the event it wants to hook into (such as sending a message), and if so, it calls that function. The plugin function can then modify the data as needed, or perform some action.
-
-For example, in the provided client code, the receive and write functions check if each plugin has an on_message_received and on_message_sent function respectively, and if so, they call those functions with the message as argument.
-
-Example Usage
-
-Here is an example of how to use the plugin system in the client code:
-
-# Load plugins from the "plugins" directory
-plugins = load_plugins_from_dir("/path/to/plugins")
-
-# ... rest of the client code ...
-
-# In the receive function
-for plugin in plugins:
-   if hasattr(plugin, 'on_message_received'):
-       message = plugin.on_message_received(message)
-print(message)
-
-# In the write function
-for plugin in plugins:
-   if hasattr(plugin, 'on_message_sent'):
-       message = plugin.on_message_sent(message)
-client.send(message.encode('ascii'))
-
-In this example, the receive function checks if each plugin has an on_message_received function, and if so, it calls that function with the received message as argument. Similarly, the write function checks if each plugin has an on_message_sent function, and if so, it calls that function with the message to be sent as argument
+def on_message_received(message):
+   logging.info(f'Received message: {message}')
+   return message
+This plugin uses the logging module to log all received messages to a file named chat.log. The on_message_received function is overridden to add logging behavior. Note that the function returns the original message, so it does not alter the message itself.

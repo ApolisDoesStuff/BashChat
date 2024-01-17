@@ -1,9 +1,21 @@
 import configparser
+import os
 import socket
 import threading
 
+CONFIG_FILE = 'config.ini'
+
+def create_default_config():
+   config = configparser.ConfigParser()
+   config['SERVER'] = {'ip': '', 'port': '', 'start': 'False'}
+   with open(CONFIG_FILE, 'w') as f:
+       config.write(f)
+
+if not os.path.exists(CONFIG_FILE):
+   create_default_config()
+
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(CONFIG_FILE)
 
 class Server:
    def __init__(self, host=None, port=None):

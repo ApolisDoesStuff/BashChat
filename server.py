@@ -6,10 +6,11 @@ import threading
 CONFIG_FILE = 'config.ini'
 
 def create_default_config():
-   config = configparser.ConfigParser()
-   config['SERVER'] = {'ip': '', 'port': '', 'start': 'False'}
-   with open(CONFIG_FILE, 'w') as f:
-       config.write(f)
+    config = configparser.ConfigParser()
+    config['SERVER'] = {'ip': '', 'port': '', 'start': 'False', 'welcome_message': ''}
+    with open(CONFIG_FILE, 'w') as f:
+        config.write(f)
+
 
 if not os.path.exists(CONFIG_FILE):
    create_default_config()
@@ -55,8 +56,12 @@ class Server:
                self.clients.append(client)
 
            print(f"Nickname of the client is {nickname}!")
-           self.broadcast(f"{nickname} joined the chat!".encode('ascii'))
-           client.send('Connected to the server!'.encode('ascii'))
+           self.broadcast(f"{nickname} joined the chat!\n".encode('ascii'))
+
+           # Check if there's a welcome message and send it if not empty
+           welcome_message = config.get('SERVER', 'welcome_message', fallback='')
+           if welcome_message.strip():
+               client.send(welcome_message.encode('ascii'))
 
            thread = threading.Thread(target=self.handle, args=(client,))
            thread.start()
